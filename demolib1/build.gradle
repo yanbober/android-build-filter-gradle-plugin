@@ -44,7 +44,7 @@ buildscript {
     }
 
     dependencies {
-        classpath 'com.github.yanbober:gradle-plugin:1.0.0-SNAPSHOTS'
+        classpath 'com.github.yanbober:build-filter-gradle-plugin:1.0.0-SNAPSHOTS'
     }
 }
 apply plugin: 'buildfilter'
