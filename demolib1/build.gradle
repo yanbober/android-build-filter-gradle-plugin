@@ -31,26 +31,28 @@ dependencies {
     androidTestImplementation 'com.android.support.test.espresso:espresso-core:3.0.1'
 }
 
-
-buildscript {
-    repositories {
-        maven {
-            if (project.properties.useLocal == 'true') {
-                url uri('../repo')
-            } else {
-                url 'https://jitpack.io'
+if (project.properties.usePlugin == 'true') {
+    buildscript {
+        repositories {
+            maven {
+                if (project.properties.useLocal == 'true') {
+                    url uri('../repo')
+                } else {
+                    url 'https://jitpack.io'
+                }
             }
         }
+
+        dependencies {
+            classpath 'com.github.yanbober:build-filter-gradle-plugin:1.0.0'
+        }
+    }
+    apply plugin: 'buildfilter'
+
+    buildClassFilter {
+        sourceExcludes = [
+                'cn/yan/gradle/plugin/BuildConfig.class'
+        ]
     }
 
-    dependencies {
-        classpath 'com.github.yanbober:build-filter-gradle-plugin:1.0.0'
-    }
-}
-apply plugin: 'buildfilter'
-
-buildClassFilter {
-    sourceExcludes = [
-            'cn/yan/gradle/plugin/BuildConfig.class'
-    ]
 }
