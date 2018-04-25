@@ -44,7 +44,7 @@ if (project.properties.usePlugin == 'true') {
         }
 
         dependencies {
-            classpath 'com.github.yanbober:build-filter-gradle-plugin:1.0.0'
+            classpath 'com.github.yanbober:build-filter-gradle-plugin:1.0.1'
         }
     }
     apply plugin: 'buildfilter'

@@ -21,6 +21,6 @@ if (project.properties.useLocal == 'true') {
 }
 
 
-version = '1.0.0'
+version = '1.0.1'
 group = 'com.github.yanbober'
 archivesBaseName = 'build-filter-gradle-plugin'
