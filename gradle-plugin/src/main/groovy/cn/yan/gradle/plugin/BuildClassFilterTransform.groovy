@@ -1,3 +1,26 @@
+/**
+ * MIT License
+ *
+ * Copyright (c) 2018 yanbo
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+ * SOFTWARE.
+ */
 package cn.yan.gradle.plugin
 
 import com.android.build.api.transform.*
@@ -8,42 +31,37 @@ import com.android.utils.FileUtils
 import com.google.common.collect.Sets
 import com.google.common.io.ByteStreams
 import org.gradle.api.Project
-
 import java.util.regex.Pattern
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-/**
- * Created by yan on 18-4-24.
- */
 
 class BuildClassFilterTransform extends Transform {
-    private static final String NAME = "BuildClassFilterTransform"
-    private List<Pattern> mJarExcludeList
-    private List<Pattern> mSourceExcludeList
+    private static final String NAME = "BuildClassFilter"
+
     private Project mProject
+    private BuildClassFilterConfig mConfig
 
     BuildClassFilterTransform(Project project) {
         mProject = project
+        mConfig = new BuildClassFilterConfig(project)
+        initAfterEvaluate(project)
+    }
+
+    private void initAfterEvaluate(Project project) {
         project.afterEvaluate {
             BuildClassFilterExtension extension = project.extensions.getByName(BuildClassFilterExtension.NAME)
-            if (extension == null) {
-                return
-            }
+            if (extension != null) {
+                if (extension.jarExcludes != null) {
+                    mConfig.configJarExcludeList = extension.jarExcludes.stream()
+                            .filter { !it.isAllWhitespace() }
+                            .collect()
+                }
 
-            if (extension.jarExcludes != null) {
-                System.out.println(project.name+":jarExcludes==============="+extension.jarExcludes)
-                mJarExcludeList = extension.jarExcludes.stream()
-                        .filter { !it.isAllWhitespace() }
-                        .map { Pattern.compile(it) }
-                        .collect()
-            }
-
-            if (extension.sourceExcludes != null) {
-                System.out.println(project.name+":sourceExcludes==============="+extension.sourceExcludes)
-                mSourceExcludeList = extension.sourceExcludes.stream()
-                        .filter { !it.isAllWhitespace() }
-                        .map { Pattern.compile(it) }
-                        .collect()
+                if (extension.sourceExcludes != null) {
+                    mConfig.configSourceExcludeList = extension.sourceExcludes.stream()
+                            .filter { !it.isAllWhitespace() }
+                            .collect()
+                }
             }
         }
     }
@@ -74,12 +92,6 @@ class BuildClassFilterTransform extends Transform {
 
     @Override
     void transform(TransformInvocation transformInvocation) throws TransformException, InterruptedException, IOException {
-//        if (mJarExcludeList == null || mJarExcludeList.size() == 0) {
-//            super.transform(transformInvocation)
-//            return
-//        }
-        println("transform---------------------------------------------")
-
         TransformOutputProvider outputProvider = transformInvocation.outputProvider
         if (!transformInvocation.isIncremental()) {
             outputProvider.deleteAll()
@@ -88,7 +100,6 @@ class BuildClassFilterTransform extends Transform {
         transformInvocation.inputs.forEach { TransformInput input ->
             input.jarInputs.forEach { JarInput jarInput ->
                 File targetJar = outputProvider.getContentLocation(jarInput.name, jarInput.contentTypes, jarInput.scopes, Format.JAR)
-                System.out.println("-2--------------------src="+jarInput.file.path+", target="+targetJar.path)
                 excludeFilesFromJar(jarInput.file, targetJar)
             }
 
@@ -98,15 +109,16 @@ class BuildClassFilterTransform extends Transform {
                     FileUtils.deleteDirectoryContents(targetDir)
                 }
                 targetDir.mkdirs()
-                System.out.println(mProject.name+"--->2>>----------directoryInput="+directoryInput.file.path)
 
                 List<String> targetList = new ArrayList<>()
                 getDeepDirFileList(directoryInput.file, targetList)
-                excludeFilesFromDirectory(directoryInput.file.absolutePath, targetList, mSourceExcludeList)
+                excludeFilesFromDirectory(directoryInput.file.absolutePath, targetList, mConfig.configSourceExcludeList)
 
                 FileUtils.copyDirectory(directoryInput.file, targetDir)
             }
         }
+
+        mConfig.done()
     }
 
     private void getDeepDirFileList(File dir, List<String> targetList) {
@@ -120,13 +132,13 @@ class BuildClassFilterTransform extends Transform {
         }
     }
 
-    private boolean matchPatternFile(List<Pattern> patternList, String file) {
+    private boolean matchPatternFile(List<String> patternList, String file) {
         if (patternList == null || file == null) {
             return false
         }
 
-        for (Pattern pattern: patternList) {
-            if (pattern.matcher(file).matches()) {
+        for (String pattern: patternList) {
+            if (Pattern.compile(pattern).matcher(file).matches()) {
                 return true
             }
         }
@@ -143,8 +155,8 @@ class BuildClassFilterTransform extends Transform {
         ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(targetJar))
         def zipEntry = null
         while ((zipEntry = zipInputStream.nextEntry) != null) {
-            if (matchPatternFile(mJarExcludeList, zipEntry.name)) {
-                System.out.println(mProject.name+":jar skip("+zipEntry.name+")----"+srcJar.absolutePath)
+            if (matchPatternFile(mConfig.configJarExcludeList, zipEntry.name)) {
+                mConfig.realJarExcludeList.add(srcJar.name+" --> remove -> "+zipEntry.name)
                 continue
             }
             zipOutputStream.putNextEntry(zipEntry)
@@ -155,14 +167,13 @@ class BuildClassFilterTransform extends Transform {
         zipOutputStream.close()
     }
 
-    private void excludeFilesFromDirectory(String dirAbsolutePath, List<String> dirFileList, List<Pattern> patternList) {
+    private void excludeFilesFromDirectory(String dirAbsolutePath, List<String> dirFileList, List<String> patternList) {
         dirFileList.forEach {
             String relativePath = it.substring(dirAbsolutePath.length()+1)
-//            System.out.println("relativePath..."+relativePath)
             if (matchPatternFile(patternList, relativePath)) {
                 File delFile = new File(it)
                 delFile.delete()
-                System.out.println(mProject.name+":delete--------------"+delFile.absolutePath)
+                mConfig.realSourceExcludeList.add(delFile.path)
             }
         }
     }
