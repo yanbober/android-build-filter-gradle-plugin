@@ -96,7 +96,6 @@ class BuildClassFilterTransform extends Transform {
         if (!transformInvocation.isIncremental()) {
             outputProvider.deleteAll()
         }
-
         transformInvocation.inputs.forEach { TransformInput input ->
             input.jarInputs.forEach { JarInput jarInput ->
                 File targetJar = outputProvider.getContentLocation(jarInput.name, jarInput.contentTypes, jarInput.scopes, Format.JAR)
@@ -150,13 +149,12 @@ class BuildClassFilterTransform extends Transform {
             targetJar.delete()
         }
         targetJar.createNewFile()
-
         ZipInputStream zipInputStream = new ZipInputStream(new FileInputStream(srcJar))
         ZipOutputStream zipOutputStream = new ZipOutputStream(new FileOutputStream(targetJar))
         def zipEntry = null
         while ((zipEntry = zipInputStream.nextEntry) != null) {
             if (matchPatternFile(mConfig.configJarExcludeList, zipEntry.name)) {
-                mConfig.realJarExcludeList.add(srcJar.name+" --> remove -> "+zipEntry.name)
+                mConfig.realJarExcludeList.add(zipEntry.name+" --> removeed from --> "+srcJar.absolutePath)
                 continue
             }
             zipOutputStream.putNextEntry(zipEntry)

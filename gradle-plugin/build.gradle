@@ -1,5 +1,4 @@
 apply plugin: 'groovy'
-apply plugin: 'maven'
 
 dependencies {
     implementation gradleApi()
@@ -7,13 +6,20 @@ dependencies {
     compileOnly 'com.android.tools.build:gradle:3.0.1'
 }
 
-uploadArchives {
-    repositories {
-        mavenDeployer {
-            repository(url: uri('../repo'))
+if (project.properties.useLocal == 'true') {
+    apply plugin: 'maven'
+
+    uploadArchives {
+        repositories {
+            mavenDeployer {
+                repository(url: uri('../repo'))
+            }
         }
     }
+} else {
+    apply plugin: 'com.github.dcendents.android-maven'
 }
 
-group = 'cn.yan.gradle.plugin'
-version = '1.0.0'
+
+version = '1.0.0-SNAPSHOTS'
+group='com.github.yanbober'

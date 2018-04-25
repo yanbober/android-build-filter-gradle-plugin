@@ -35,12 +35,16 @@ dependencies {
 buildscript {
     repositories {
         maven {
-            url uri('../repo')
+            if (project.properties.useLocal == 'true') {
+                url uri('../repo')
+            } else {
+                url 'https://jitpack.io'
+            }
         }
     }
 
     dependencies {
-        classpath 'cn.yan.gradle.plugin:gradle-plugin:1.0.0'
+        classpath 'com.github.yanbober:gradle-plugin:1.0.0-SNAPSHOTS'
     }
 }
 apply plugin: 'buildfilter'
