@@ -14,14 +14,11 @@ class BuildClassFilterPlugin implements Plugin<Project> {
 
     @Override
     void apply(Project project) {
-        println("|||||||>>>>>>>>>>>>>>>>>>>apply project:"+project.name+", project.plugins="+project.plugins)
         project.extensions.create(BuildClassFilterExtension.NAME, BuildClassFilterExtension)
         if (project.plugins.hasPlugin(AppPlugin)) {
-            println("---------------------------AppPlugin="+project.name)
             AppExtension android = project.extensions.getByType(AppExtension)
             android.registerTransform(new BuildClassFilterTransform(project))
         } else if(project.plugins.hasPlugin(LibraryPlugin)) {
-            println("---------------------------LibraryExtension="+project.name)
             LibraryExtension android = project.extensions.getByType(LibraryExtension)
             android.registerTransform(new BuildClassFilterTransform(project))
         }

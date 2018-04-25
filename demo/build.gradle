@@ -44,10 +44,6 @@ buildscript {
 apply plugin: 'buildfilter'
 
 buildClassFilter {
-    jarExcludes = [
-            'android/support/v7/app/AppcompatActivity.class',
-    ]
-
     sourceExcludes = [
             'cn/yan/gradle/plugin/BuildConfig'
     ]
