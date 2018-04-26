@@ -300,4 +300,4 @@ dependencies {
 <div><img src=".images/build-process.png""></div>
 
 详细图
-<div><img src=".picture/Android Build Process.png"></div>
+<div><img src=".images/Android-Build-Process.png"></div>
