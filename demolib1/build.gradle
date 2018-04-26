@@ -3,6 +3,12 @@ apply plugin: 'com.android.library'
 android {
     compileSdkVersion 26
 
+    sourceSets {
+        main {
+             java.exclude("cn/yan/gradle/plugin/BuildConfig.java")
+        }
+    }
+
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 26
@@ -15,7 +21,7 @@ android {
 
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
@@ -44,14 +50,20 @@ if (project.properties.usePlugin == 'true') {
         }
 
         dependencies {
-            classpath 'com.github.yanbober:android-build-filter-gradle-plugin:1.0.1'
+            if (project.properties.useLocal == 'true') {
+                classpath 'com.github.yanbober:build-filter-gradle-plugin:1.0.1'
+            } else {
+                classpath 'com.github.yanbober:android-build-filter-gradle-plugin:1.0.1'
+            }
         }
     }
+
     apply plugin: 'buildfilter'
 
     buildClassFilter {
         sourceExcludes = [
-                'cn/yan/gradle/plugin/BuildConfig.class'
+//            'cn/yan/gradle/plugin/BuildConfig.class',
+//            'cn/yan/gradle/plugin/**'
         ]
     }
 }
